@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   pipex.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: roaranda <roaranda@student.42madrid>       +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/09/22 19:16:10 by roaranda          #+#    #+#             */
+/*   Updated: 2021/09/22 20:05:34 by roaranda         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "./libft/include/libft.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -8,112 +20,147 @@
 #include <fcntl.h>
 
 /*
-** check_args function splits both commands into the command and its arguments;
-** in example: "ls -la" into "ls" and "-la", checks the existence of the
-** command in /usr/bin/ folder and if the binary has executable permission
-** for the user that is running the process.
+** search_cmd_path() is the crucial auxiliary function in pipex. It will get the
+** PATH env variable using ft_getenv() and split it into paths. Then it will
+** test each path with the given cmd passed as argument to check its existence
+** and if it counts with executable permission for the user that is running
+** pipex.
+** ---------------------------- A note for main() ----------------------------
+** Since both forked procceses use "exec" functions there is no need to nest
+** if/elses as is usual when using fork() because exec will wipe the
+** forked-child process so the code under the child function call will never be
+** executed by any of the child procesess.
+**
+** --------------- Explanation for each child process function ---------------
+** The child one function will substitute his STDIN fd for the input file fd and 
+** his STDOUT fd for the write end of the pipe using dup2().
+** Child two will substitue his STDIN fd for the read end of the pipe and his
+** STDOUT for the fd of the output file using dup2().
 */
 
-int check_args(int argc, char *argv[])
+char	*search_cmd_path(char *cmd, char *envp[])
 {
-    char **splited_cmd[2];
-    char *path_cmd[2];
+	char	**splited_path;
+	char	*env_path;
+	char	*cmd_path;
+	int		i;
 
-    if (argc != 5)
-    {
-        printf("Incorrect number of arguments\n");
-        return (-1);
-    }
-    splited_cmd[0] = ft_split(argv[2], ' ');
-    splited_cmd[1] = ft_split(argv[3], ' ');
-    if (!splited_cmd[0]|| !splited_cmd[1])
-        return (-1);
-    path_cmd[0] = ft_strjoin("/usr/bin/", splited_cmd[0][0]);
-    path_cmd[1] = ft_strjoin("/usr/bin/", splited_cmd[1][0]);
-    if (access(path_cmd[0], X_OK) < 0)
-    {
-        perror("First command error: ");
-        return (-1);
-    }
-    if (access(path_cmd[1], X_OK) < 0)
-    {
-        perror("Second command error: \n");
-        return (-1);
-    }
-    ft_free(2, &path_cmd[0], &path_cmd[1]);
-    return (1);
+	env_path = ft_getenv(envp, "PATH");
+	splited_path = ft_split(env_path, ':');
+	i = 0;
+	while (splited_path[i])
+	{
+		cmd_path = ft_strjoin_all(splited_path[i], "/", cmd, "");
+		if (access(cmd_path, X_OK) == 0)
+			break ;
+		ft_free(1, &cmd_path);
+		i++;
+	}
+	ft_free(1, &env_path);
+	ft_freedp(1, &splited_path);
+	return (cmd_path);
 }
 
-void child_one(char *argv[], char *envp[], int pipefd[])
+int	check_args(int argc, char *argv[], char *envp[])
 {
-    char **splited_cmd;
-    char *path_cmd;
-    int fd;
+	/*
+	char	**splited_cmd[2];
+	char	*path_cmd[2];
+	*/
 
-    close(pipefd[0]);
-    splited_cmd = ft_split(argv[2], ' ');
-    path_cmd = ft_strjoin("/usr/bin/", splited_cmd[0]);
-    fd = open(argv[1], O_RDONLY);
-    if (fd < 0)
-    {
-        perror("Error opening input file for reading: ");
-        exit(EXIT_FAILURE);
-    }
-    dup2(fd, STDIN_FILENO);
-    dup2(pipefd[1], STDOUT_FILENO);
-    execve(path_cmd, splited_cmd, envp);
-    exit(EXIT_FAILURE);
+	if (argc != 5)
+	{
+		printf("Incorrect number of arguments\n");
+		return (-1);
+	}
+	if (!envp || !argv)
+		return (-1);
+	/*
+	splited_cmd[0] = ft_split(argv[2], ' ');
+	splited_cmd[1] = ft_split(argv[3], ' ');
+	if (!splited_cmd[0] || !splited_cmd[1])
+		return (-1);
+	path_cmd[0] = search_cmd_path(splited_cmd[0][0], envp);
+	path_cmd[1] = search_cmd_path(splited_cmd[1][0], envp);
+	ft_free(2, &path_cmd[0], &path_cmd[1]);
+	ft_freedp(2, &splited_cmd[0], &splited_cmd[1]);
+	*/
+	return (1);
 }
 
-void child_two(char *argv[], char *envp[], int pipefd[])
+void	child_one(char *argv[], char *envp[], int pipefd[])
 {
-    char **splited_cmd;
-    char  *path_cmd;
-    int fd;
+	char	**splited_cmd;
+	char	*path_cmd;
+	int		fd;
+	int		err;
 
-    close(pipefd[1]);
-    splited_cmd = ft_split(argv[3], ' ');
-    path_cmd = ft_strjoin("/usr/bin/", splited_cmd[0]);
-    fd = open(argv[4], O_WRONLY | O_CREAT, 644);
-    if (fd < 0)
-    {
-        perror("Error opening file for writting: ");
-        exit(EXIT_FAILURE);
-    }
-    dup2(pipefd[0], STDIN_FILENO);
-    dup2(fd, STDOUT_FILENO);
-    execve(path_cmd, splited_cmd, envp);
-    exit(EXIT_FAILURE);
+	close(pipefd[0]);
+	splited_cmd = ft_split(argv[2], ' ');
+	path_cmd = search_cmd_path(splited_cmd[0], envp);
+	fd = open(argv[1], O_RDONLY);
+	if (fd < 0)
+	{
+		perror("Error opening input file: ");
+		exit(EXIT_FAILURE);
+	}
+	dup2(fd, STDIN_FILENO);
+	dup2(pipefd[1], STDOUT_FILENO);
+	err = execve(path_cmd, splited_cmd, envp);
+	if (err < 0)
+		perror(ft_strjoin("Error command not found ", argv[2]));
+	exit(EXIT_FAILURE);
 }
 
-int main(int argc, char *argv[], char *envp[])
+void	child_two(char *argv[], char *envp[], int pipefd[])
 {
-    int   pipe_fd[2];
-    int   status;
-    pid_t pid[2];
- 
-    if (check_args(argc, argv) < 0)
-        return (-1);
-    pipe(pipe_fd);
-    pid[0] = fork();
-    if (pid[0] < 0)
-    {
-        perror("Child 1 failed: ");
-        return (-1);
-    }
-    else if (pid[0] == 0)
-        child_one(argv, envp, pipe_fd);
-    pid[1] = fork();
-    if (pid[1] < 0)
-    {
-        perror("Child 2 failed: ");
-        return (-1);
-    }
-    else if (pid[1] == 0)
-        child_two(argv, envp, pipe_fd);
-    close(pipe_fd[0]);
-    close(pipe_fd[1]);  
-    waitpid(pid[0], &status, 0);
-    waitpid(pid[1], &status, 0);
-    return (1);
+	char	**splited_cmd;
+	char	*path_cmd;
+	int		fd;
+	int		err;
+
+	close(pipefd[1]);
+	splited_cmd = ft_split(argv[3], ' ');
+	path_cmd = search_cmd_path(splited_cmd[0], envp);
+	fd = open(argv[4], O_WRONLY | O_CREAT, 0644);
+	if (fd < 0)
+	{
+		perror("Error opening output file: ");
+		exit(EXIT_FAILURE);
+	}
+	dup2(pipefd[0], STDIN_FILENO);
+	dup2(fd, STDOUT_FILENO);
+	err = execve(path_cmd, splited_cmd, envp);
+	if (err < 0)
+		perror(ft_strjoin("Error command not found ", argv[3]));
+	exit(EXIT_FAILURE);
+}
+
+int	main(int argc, char *argv[], char *envp[])
+{
+	int		pipe_fd[2];
+	int		status;
+	pid_t	pid[2];
+
+	if (check_args(argc, argv, envp) < 0)
+		return (-1);
+	pipe(pipe_fd);
+	pid[0] = fork();
+	if (pid[0] < 0)
+	{
+		perror("Child 1 failed: ");
+		return (-1);
+	}
+	else if (pid[0] == 0)
+		child_one(argv, envp, pipe_fd);
+	pid[1] = fork();
+	if (pid[1] < 0)
+		return (-1);
+	else if (pid[1] == 0)
+		child_two(argv, envp, pipe_fd);
+	close(pipe_fd[0]);
+	close(pipe_fd[1]);
+	waitpid(pid[0], &status, 0);
+	waitpid(pid[1], &status, 0);
+	return (1);
 }

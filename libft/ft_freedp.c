@@ -6,11 +6,11 @@
 /*   By: roaranda <roaranda@student.42madrid>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/10/08 13:28:11 by roaranda          #+#    #+#             */
-/*   Updated: 2021/09/21 18:55:18 by roaranda         ###   ########.fr       */
+/*   Updated: 2021/09/22 19:58:05 by roaranda         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "libft.h"
+#include "./include/libft.h"
 
 /*
 ** This is a function that frees multiple pointers that are passed as arguments
@@ -23,29 +23,30 @@
 ** An example of calling to this function is "ft_free(2, &ptr1, &ptr2);"
 */
 
-void	ft_free(unsigned int n, ...)
+void	ft_freedp(unsigned int n, ...)
 {
 	va_list	ap;
 	void	***p;
 	int		i;
-    int     j;
+	int		j;
 
 	i = n + 1;
 	va_start(ap, n);
 	while (--i > 0)
 	{
 		p = (void ***)va_arg(ap, void *);
-        while ((*p)[j] != NULL)
-        {
-            free((*p)[j]);
+		j = 0;
+		while ((*p)[j] != NULL)
+		{
+			free((*p)[j]);
 			(*p)[j] = NULL;
-            j++;
+			j++;
 		}
-        if (*p != NULL)
-        {
-            free(*p);
+		if (*p != NULL)
+		{
+			free(*p);
 			*p = NULL;
-        }
+		}
 	}
 	va_end(ap);
 	return ;

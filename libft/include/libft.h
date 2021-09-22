@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   libft.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: roaranda <roaranda@student.42madrid.com    +#+  +:+       +#+        */
+/*   By: roaranda <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/12/17 20:52:29 by roaranda          #+#    #+#             */
-/*   Updated: 2021/09/16 20:45:23 by roaranda         ###   ########.fr       */
+/*   Updated: 2021/09/22 16:46:41 by roaranda         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,6 +88,7 @@ t_list				*ft_lstmap(t_list *lst, void *(*f)(void *),
 int					ft_strcmp(const char *s1, const char *s2);
 int					ft_isinhere(int c, const char *s);
 void				ft_free(unsigned int n, ...);
+void				ft_freedp(unsigned int n, ...);
 char				*ft_strrev(const char *s);
 char				*ft_strjoin_all(const char *s1, const char *s2,
 						const char *s3, const char *s4);
