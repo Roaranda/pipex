@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ft_getenv.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: roaranda <roaranda@student.42madrid.com    +#+  +:+       +#+        */
+/*   By: roaranda <roaranda@student.42madrid>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/09/16 19:09:33 by roaranda          #+#    #+#             */
-/*   Updated: 2021/09/17 00:51:01 by roaranda         ###   ########.fr       */
+/*   Updated: 2021/09/22 11:47:53 by roaranda         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,9 +33,8 @@ char	*ft_getenv(char **envp, const char *var_name)
 	if (!var_name || !envp)
 		return (NULL);
 	i = 0;
-	len = ft_strlen(var_name);
-	i = 0;
 	var_value = NULL;
+	len = ft_strlen(var_name);
 	while ((envp[i] != NULL) && (var_value == NULL))
 	{
 		if (ft_strncmp(var_name, envp[i], len) == 0)
