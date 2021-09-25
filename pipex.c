@@ -6,7 +6,7 @@
 /*   By: roaranda <roaranda@student.42madrid>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/09/22 19:16:10 by roaranda          #+#    #+#             */
-/*   Updated: 2021/09/23 19:59:25 by roaranda         ###   ########.fr       */
+/*   Updated: 2021/09/25 17:40:08 by roaranda         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,11 +20,17 @@
 #include <fcntl.h>
 
 /*
-** search_cmd_path() is the crucial auxiliary function in pipex. It will get the
-** PATH env variable using ft_getenv() and split it into paths. Then it will
-** test each path with the given cmd passed as argument to check its existence
-** and if it counts with executable permission for the user that is running
-** pipex.
+** search_cmd_path() is the crucial auxiliary function in pipex. It is called
+** when the argument for a command has not been passed as an absolute path
+** like "/bin/cat". This function will get the PATH env variable using 
+** ft_getenv() and split it into paths. 
+** Then it will test each path with the given cmd passed as argument to
+** check its existence and if it counts with executable permission for the user
+** that is running pipex.
+** This function does not need to free() each allocated pointer since this 
+** function is called from the child processes that will be wiped out by the
+** execev() function so memory leaks will be wiped out as well.
+**
 ** ---------------------------- A note for main() ----------------------------
 ** Since both forked procceses use "exec" functions there is no need to nest
 ** if/elses as is usual when using fork() because exec will wipe the
@@ -53,11 +59,8 @@ char	*search_cmd_path(char *cmd, char *envp[])
 		cmd_path = ft_strjoin_all(splited_path[i], "/", cmd, "");
 		if (access(cmd_path, X_OK) == 0)
 			break ;
-		//ft_free(1, &cmd_path);
 		i++;
 	}
-	//ft_free(1, &env_path);
-	//ft_freedp(1, &splited_path);
 	return (cmd_path);
 }
 
@@ -70,7 +73,10 @@ void	child_one(char *argv[], char *envp[], int pipefd[])
 
 	close(pipefd[0]);
 	splited_cmd = ft_split(argv[2], ' ');
-	path_cmd = search_cmd_path(splited_cmd[0], envp);
+	if (access(splited_cmd[0], X_OK) == 0)
+		path_cmd = splited_cmd[0];
+	else
+		path_cmd = search_cmd_path(splited_cmd[0], envp);
 	fd = open(argv[1], O_RDONLY);
 	if (fd < 0)
 	{
@@ -81,7 +87,7 @@ void	child_one(char *argv[], char *envp[], int pipefd[])
 	dup2(pipefd[1], STDOUT_FILENO);
 	err = execve(path_cmd, splited_cmd, envp);
 	if (err < 0)
-		perror(ft_strjoin("Error command not found ", argv[2]));
+		perror(ft_strjoin("Error command not found ", splited_cmd[0]));
 	exit(EXIT_FAILURE);
 }
 
@@ -94,7 +100,10 @@ void	child_two(char *argv[], char *envp[], int pipefd[])
 
 	close(pipefd[1]);
 	splited_cmd = ft_split(argv[3], ' ');
-	path_cmd = search_cmd_path(splited_cmd[0], envp);
+	if (access(splited_cmd[0], X_OK) == 0)
+		path_cmd = splited_cmd[0];
+	else
+		path_cmd = search_cmd_path(splited_cmd[0], envp);
 	fd = open(argv[4], O_WRONLY | O_CREAT, 0644);
 	if (fd < 0)
 	{
@@ -105,7 +114,7 @@ void	child_two(char *argv[], char *envp[], int pipefd[])
 	dup2(fd, STDOUT_FILENO);
 	err = execve(path_cmd, splited_cmd, envp);
 	if (err < 0)
-		perror(ft_strjoin("Error command not found ", argv[3]));
+		perror(ft_strjoin("Error command not found ", splited_cmd[0]));
 	exit(EXIT_FAILURE);
 }
 
