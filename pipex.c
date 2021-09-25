@@ -6,7 +6,7 @@
 /*   By: roaranda <roaranda@student.42madrid>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/09/22 19:16:10 by roaranda          #+#    #+#             */
-/*   Updated: 2021/09/22 20:05:34 by roaranda         ###   ########.fr       */
+/*   Updated: 2021/09/23 19:59:25 by roaranda         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,39 +53,12 @@ char	*search_cmd_path(char *cmd, char *envp[])
 		cmd_path = ft_strjoin_all(splited_path[i], "/", cmd, "");
 		if (access(cmd_path, X_OK) == 0)
 			break ;
-		ft_free(1, &cmd_path);
+		//ft_free(1, &cmd_path);
 		i++;
 	}
-	ft_free(1, &env_path);
-	ft_freedp(1, &splited_path);
+	//ft_free(1, &env_path);
+	//ft_freedp(1, &splited_path);
 	return (cmd_path);
-}
-
-int	check_args(int argc, char *argv[], char *envp[])
-{
-	/*
-	char	**splited_cmd[2];
-	char	*path_cmd[2];
-	*/
-
-	if (argc != 5)
-	{
-		printf("Incorrect number of arguments\n");
-		return (-1);
-	}
-	if (!envp || !argv)
-		return (-1);
-	/*
-	splited_cmd[0] = ft_split(argv[2], ' ');
-	splited_cmd[1] = ft_split(argv[3], ' ');
-	if (!splited_cmd[0] || !splited_cmd[1])
-		return (-1);
-	path_cmd[0] = search_cmd_path(splited_cmd[0][0], envp);
-	path_cmd[1] = search_cmd_path(splited_cmd[1][0], envp);
-	ft_free(2, &path_cmd[0], &path_cmd[1]);
-	ft_freedp(2, &splited_cmd[0], &splited_cmd[1]);
-	*/
-	return (1);
 }
 
 void	child_one(char *argv[], char *envp[], int pipefd[])
@@ -136,13 +109,24 @@ void	child_two(char *argv[], char *envp[], int pipefd[])
 	exit(EXIT_FAILURE);
 }
 
+int	check_args(int argc)
+{
+	if (argc != 5)
+	{
+		printf("Incorrect number of arguments\n");
+		printf("Pipex usage:\n./pipex file1 cmd1 cmd2 file2\n");
+		return (-1);
+	}
+	return (1);
+}
+
 int	main(int argc, char *argv[], char *envp[])
 {
 	int		pipe_fd[2];
 	int		status;
 	pid_t	pid[2];
 
-	if (check_args(argc, argv, envp) < 0)
+	if (check_args(argc) < 0)
 		return (-1);
 	pipe(pipe_fd);
 	pid[0] = fork();
