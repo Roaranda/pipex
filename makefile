@@ -3,20 +3,22 @@
 NAME	:= 	pipex
 CC		:= 	gcc 
 CFLAGS	:=	-Wall -Wextra -Werror
-LIBFT	:=	./libft
+LIBDIR	:=	./libft
 SRCS 	:= 	./pipex.c
 OBJS	:=	${SRCS:.c=.o}
 
-all: 	libft.a ${NAME}
+all:	${NAME}
 
 libft.a: 
-		@make -C ${LIBFT}
-		@mv ${LIBFT}/libft.a ./
+		@make -C ${LIBDIR}
+		@mv ${LIBDIR}/libft.a ./
 		@echo 1 - libft compiled
 
-${NAME}:
+%.o : %.c
+		@${CC} ${CFLAGS} -c $< -o $@
+
+${NAME}: ${OBJS} libft.a
 		@echo 2 - Compiling pipex objects
-		@${CC} ${CFLAGS} -c ${SRCS}
 		@${CC} ${CFLAGS} ${OBJS} libft.a -o ${NAME}
 		@echo 3 - pipex compiled
 
